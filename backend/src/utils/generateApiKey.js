@@ -1,6 +1,7 @@
+const crypto = require("crypto");
 
-const generateApiKey = ()=>{
-    return "Api key generated";
-}
+const generateApiKey = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
 
 module.exports = generateApiKey;
