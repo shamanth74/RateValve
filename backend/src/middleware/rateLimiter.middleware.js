@@ -1,10 +1,10 @@
 const { consumeToken } = require("../services/tokenBucket.service");
-
+const logRequest=require("../models/log.model")
 /**
  * Rate Limiting Middleware (Token Bucket)
  * Default: 10 requests per minute per API key
  */
-const rateLimiterMiddleware = (req, res, next) => {
+const rateLimiterMiddleware = async(req, res, next) => {
   const apiKey = req.headers["x-api-key"];
 
   // apiKey is guaranteed to exist because apiKeyAuthMiddleware runs before this
@@ -15,7 +15,7 @@ const rateLimiterMiddleware = (req, res, next) => {
       message: "Rate limit exceeded. Please try again later.",
     });
   }
-
+  
   next();
 };
 

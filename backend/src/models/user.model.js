@@ -18,7 +18,20 @@ const createUser = async (email, passwordHash, apiKey) => {
   return result.rows[0];
 };
 
+
+const getApi = async(userId)=>{
+  const { rows } = await pool.query(
+  `SELECT api_key FROM users WHERE id = $1`,
+  [userId]
+);
+
+if (rows.length === 0) return null;
+
+return rows[0].api_key;
+}
+
 module.exports = {
   findUserByEmail,
-  createUser
+  createUser,
+  getApi
 };
