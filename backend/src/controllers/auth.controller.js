@@ -32,9 +32,13 @@ const SignUpController = async (req, res) => {
     if (user) {
         const token=generateJwt(user.id,"USER");
       return res.status(201).json({
-        msg: "User created successfully",
-        "api-key": apiKey,
-        token
+        token,
+        user: {
+      id: user.id,
+      email: user.email,
+      role: "USER",
+      apiKey: apiKey
+    }
       });
     }
   } catch (e) {
@@ -48,11 +52,11 @@ const SignUpController = async (req, res) => {
 const LoginController = async (req, res) => {
   try {
     const { email, password,role } = req.body;
-    if (!email || !password) {
+    if (!email || !password || !role) {
       return res.status(400).json({ msg: "Missing Credentials" });
     }
     const validUser = await findUserByEmail(email);
-    if (!validUser && !(validUser.role==role)) {
+    if (!validUser || !(validUser.role==role)) {
       return res.status(404).json({ msg: "Invalid Email/Role" });
     }
     const isPasswordValid = await bcrypt.compare(
@@ -62,9 +66,12 @@ const LoginController = async (req, res) => {
     if (isPasswordValid) {
         const token=generateJwt(validUser.id,validUser.role);
       return res.status(200).json({
-        msg: "Login Successful",
-        "api-key": validUser.api_key,
-        token
+        token,
+        user: {
+      id: validUser.id,
+        email: validUser.email,
+        role: validUser.role,
+        apiKey: validUser.api_key,}
       });
     }
     return res.status(400).json({"msg":"Invalid Password"});

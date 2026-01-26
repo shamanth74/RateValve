@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 
 const apiDataController=async (req,res) =>{
     return res.status(200).json({
@@ -9,6 +10,7 @@ const apiDataController=async (req,res) =>{
     data: {
       info: "This is protected API data",
     },
+    val:crypto.randomBytes(8).toString("hex")
   });
 }
 
