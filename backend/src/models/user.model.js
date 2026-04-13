@@ -30,8 +30,17 @@ if (rows.length === 0) return null;
 return rows[0].api_key;
 }
 
+const findUserById = async (id) => {
+  const result = await pool.query(
+    'SELECT id, email, role, api_key, tier, is_blocked FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0];
+};
+
 module.exports = {
   findUserByEmail,
+  findUserById,
   createUser,
   getApi
 };

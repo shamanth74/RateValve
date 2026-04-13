@@ -4,6 +4,8 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     api_key TEXT UNIQUE NOT NULL,
     role TEXT NOT NULL DEFAULT 'USER',
+    tier VARCHAR(10) NOT NULL DEFAULT 'FREE' CHECK (tier IN ('FREE', 'PRO')),
+    is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

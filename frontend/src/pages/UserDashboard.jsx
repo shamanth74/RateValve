@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Copy, CheckCircle, AlertCircle } from "lucide-react"
+import { Copy, CheckCircle, AlertCircle, ShieldAlert } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import Navbar from "@/components/Navbar"
-import { testApiRequest } from "@/api/user.api"
+import { testApiRequest, fetchMe } from "@/api/user.api"
 import {
   Card,
   CardContent,
@@ -14,18 +14,44 @@ import {
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+const TIER_INFO = {
+  FREE: { label: "Free Plan", limit: "10 req/min", color: "bg-gray-100 text-gray-700" },
+  PRO: { label: "Pro Plan", limit: "50 req/min", color: "bg-blue-100 text-blue-700" },
+}
+
 export default function UserDashboard() {
-  const user = JSON.parse(localStorage.getItem("user"))
-  const apiKey = user?.apiKey
   const navigate = useNavigate()
+
+  const [currentUser, setCurrentUser] = useState(() =>
+    JSON.parse(localStorage.getItem("user"))
+  )
+  const apiKey = currentUser?.apiKey
 
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState(null)
   const [error, setError] = useState("")
 
+  const tier = currentUser?.tier || "FREE"
+  const tierInfo = TIER_INFO[tier] || TIER_INFO.FREE
+
+  // Fetch fresh user profile on mount — keeps tier & block status in sync
   useEffect(() => {
-    if (!user) navigate("/")
+    if (!currentUser) {
+      navigate("/")
+      return
+    }
+
+    fetchMe()
+      .then((res) => {
+        const freshUser = res.data.user
+        // Update localStorage so it stays fresh
+        localStorage.setItem("user", JSON.stringify(freshUser))
+        setCurrentUser(freshUser)
+      })
+      .catch((err) => {
+        console.error("Failed to fetch profile:", err)
+      })
   }, [])
 
   const copyKey = () => {
@@ -43,11 +69,16 @@ export default function UserDashboard() {
       const res = await testApiRequest(apiKey)
       setResponse(res.data)
     } catch (err) {
-      setError(
-        err.response?.data?.msg ||
-        err.response?.data?.error ||
-        "Rate limit exceeded"
-      )
+      if (err.response?.status === 403 && err.response?.data?.error === "BLOCKED") {
+        setError("Your account has been blocked. Contact support.")
+      } else {
+        setError(
+          err.response?.data?.msg ||
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Rate limit exceeded"
+        )
+      }
     } finally {
       setLoading(false)
     }
@@ -63,10 +94,26 @@ export default function UserDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-3xl mx-auto space-y-6"
         >
-          {/* API KEY */}
+          {/* BLOCKED BANNER */}
+          {currentUser?.is_blocked && (
+            <Alert variant="destructive" className="border-red-300 bg-red-50">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertDescription className="text-red-700 font-medium">
+                Your account has been blocked. API requests will be rejected.
+                Please contact support.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* API KEY + TIER */}
           <Card>
             <CardHeader>
-              <CardTitle>Your API Key</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Your API Key</CardTitle>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${tierInfo.color}`}>
+                  {tierInfo.label} — {tierInfo.limit}
+                </span>
+              </div>
             </CardHeader>
             <CardContent className="flex items-center justify-between gap-4">
               <code className="bg-gray-100 px-3 py-2 rounded text-sm break-all">
@@ -97,7 +144,7 @@ export default function UserDashboard() {
                   <code className="bg-gray-100 px-1 ml-1 rounded">x-api-key</code>
                 </li>
                 <li>
-                  Requests are rate limited (10 requests/minute)
+                  Requests are rate limited ({tierInfo.limit})
                 </li>
               </ul>
 

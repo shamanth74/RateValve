@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const { findUserByEmail, createUser,getApi } = require("../models/user.model");
+const { findUserByEmail, findUserById, createUser,getApi } = require("../models/user.model");
 
 const generateApiKey = require("../utils/generateApiKey");
 
@@ -37,7 +37,9 @@ const SignUpController = async (req, res) => {
       id: user.id,
       email: user.email,
       role: "USER",
-      apiKey: apiKey
+      apiKey: apiKey,
+      tier: "FREE",
+      is_blocked: false
     }
       });
     }
@@ -71,7 +73,9 @@ const LoginController = async (req, res) => {
       id: validUser.id,
         email: validUser.email,
         role: validUser.role,
-        apiKey: validUser.api_key,}
+        apiKey: validUser.api_key,
+        tier: validUser.tier || "FREE",
+        is_blocked: validUser.is_blocked || false}
       });
     }
     return res.status(400).json({"msg":"Invalid Password"});
@@ -95,8 +99,37 @@ const getApiKey = async(req,res)=>{
     return res.status(500).json({ msg: "Internal Server error" });
   }
 }
+
+/**
+ * GET /api/auth/me
+ * Returns fresh user profile from DB (not stale localStorage)
+ */
+const getMe = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        apiKey: user.api_key,
+        tier: user.tier || "FREE",
+        is_blocked: user.is_blocked || false,
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ msg: "Internal Server error" });
+  }
+};
+
 module.exports = {
   SignUpController,
   LoginController,
-  getApiKey
+  getApiKey,
+  getMe
 };

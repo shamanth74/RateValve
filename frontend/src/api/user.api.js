@@ -7,3 +7,5 @@ export const testApiRequest = (apiKey) => {
     },
   })
 }
+
+export const fetchMe = () => api.get("/api/auth/me")

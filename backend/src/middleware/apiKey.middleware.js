@@ -10,7 +10,7 @@ const apiKeyAuthMiddleware = async (req, res, next) => {
       });
     }
     const result = await pool.query(
-      "SELECT id, email FROM users WHERE api_key = $1",
+      "SELECT id, email, tier, is_blocked FROM users WHERE api_key = $1",
       [apiKey],
     );
     if(result.rows.length===0){
@@ -22,7 +22,7 @@ const apiKeyAuthMiddleware = async (req, res, next) => {
     next();
   } 
   catch (e) {
-    console.error("API key auth error:", error);
+    console.error("API key auth error:", e);
     return res.status(500).json({
       message: "Internal server error",
     });
